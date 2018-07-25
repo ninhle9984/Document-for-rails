@@ -79,3 +79,43 @@ Started POST "/__better_errors/e00ddf35df005747/variables" for 127.0.0.1 at 2018
 
 ### Các quan hệ của ActiveRecord:
 
+- Trong rails, association là kết nối giữa 2 model. Việc sử dụng association giúp cho việc xử lí và truy vấn trở nên đơn giản, dễ vận hành hơn , cũng gần như việc ORM giúp cho việc thao tác với DB trở nên đơn giản hơn , và hầu như ko phải viết SQL thuần =)).
+##### 1. Belongs_to và has_one:
+Cả hai đều là kết nối một - một giữa 2 model:<br />
+Ví dụ: mỗi người dùng có một tài khoản, ta có 2 model User và Account có thể setup như sau:<br/>
+Trong migration file:
+```ruby
+class CreateUsers < ActiveRecord::Migration[5.2]
+  def change
+    create_table :users do |t|
+      t.string :name
+      ………………
+      t.timestamps
+    end
+  end
+end
+
+class CreateAccounts < ActiveRecord::Migration[5.2]
+  def change
+    create_table :accounts do |t|
+      t.email :name
+      t.belongs_to :user, index: true
+      …………………………
+      t.timestamps
+    end
+  end
+end
+
+
+```
+
+  Dòng ` t.belongs_to :user, index: true ` khi chạy migration sẽ tạo ra cột user_id được đánh index tương ứng trong bảng `Account`. Khi đó trong model ta sẽ khai báo các association tương ứng:
+  ```ruby
+  class Account < ApplicationRecord
+     belongs_to :user
+  end
+  
+  class User < ApplicationRecord
+     has_one :account
+  end
+  ```
