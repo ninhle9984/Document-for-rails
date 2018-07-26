@@ -156,6 +156,7 @@ So với khi khai báo sử dụng `has_one` thì không còn sử dụng LIMIT 
 ##### 3. Has_one :through
 Kết nối một - một với một model khác, nhưng thông qua model trung gian. Vẫn ví dụ trên 1.1, có thêm model Exchange quan hệ một - một với Account.<br/>
 ![](https://github.com/ninhle9984/Document-for-rails/blob/master/images/has_one_through.png)
+<br/>
 Migration của exchange:<br/>
 ```sql
 class CreateExchanges < ActiveRecord::Migration[5.2]
