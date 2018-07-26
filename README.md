@@ -82,6 +82,8 @@ Started POST "/__better_errors/e00ddf35df005747/variables" for 127.0.0.1 at 2018
 - Trong rails, association là kết nối giữa 2 model. Việc sử dụng association giúp cho việc xử lí và truy vấn trở nên đơn giản, dễ vận hành hơn , cũng gần như việc ORM giúp cho việc thao tác với DB trở nên đơn giản hơn , và hầu như ko phải viết SQL thuần =)).
 ##### 1. Belongs_to và has_one:
 Cả hai đều là kết nối một - một giữa 2 model:<br />
+![](https://github.com/ninhle9984/Document-for-rails/blob/master/images/belongs_to.png)
+</br>
 Ví dụ: mỗi người dùng có một tài khoản, ta có 2 model User và Account có thể setup như sau:<br/>
 Trong migration file:
 ```ruby
@@ -136,6 +138,7 @@ User Load (0.2ms)  SELECT  "users".* FROM "users" WHERE "users"."id" = ? LIMIT ?
 ```
 ##### 2. Has_many:
 Kết nối một - nhiều giữa một model với model khác. <br />
+![](https://github.com/ninhle9984/Document-for-rails/blob/master/images/has_many.png) <br/>
 Trường hợp vẫn set up như trên, coi một `user` có nhiều `account` ta chỉ việc khai báo lại trong model *User* :
 <br />
 ```ruby
@@ -151,7 +154,8 @@ Account Load (0.2ms)  SELECT  "accounts".* FROM "accounts" WHERE "accounts"."use
 So với khi khai báo sử dụng `has_one` thì không còn sử dụng LIMIT trong câu lệnh SQL nữa.<br/>
 
 ##### 3. Has_one :through
-Kết nối một - một với một model khác, nhưng thông qua model trung gian. Vấn ví dụ trên 1.1, có thêm model Exchange quan hệ một - một với Account.<br/>
+Kết nối một - một với một model khác, nhưng thông qua model trung gian. Vẫn ví dụ trên 1.1, có thêm model Exchange quan hệ một - một với Account.<br/>
+![](https://github.com/ninhle9984/Document-for-rails/blob/master/images/has_one_through.png)
 Migration của exchange:<br/>
 ```sql
 class CreateExchanges < ActiveRecord::Migration[5.2]
@@ -186,6 +190,8 @@ Câu lệnh SQL tương ứng sinh ra sẽ join 2 bảng *Exchange* và *Account
 
 ##### 4. Has_many :through
   Kết nối nhiều - nhiều với một model khác thông qua model trung gian.<br/>
+  ![](https://github.com/ninhle9984/Document-for-rails/blob/master/images/has_many_throght.png)
+  <br />
    VD: một user có tham gia nhiều club, một club có nhiều user, ta xây dụng mô hình `has_many :through` qua một model trung gian là ClubUser , khai báo như sau:<br/>
    Migration file tương ứng của *User* vẫn không thay đổi còn của  *ClubUser* và *Club* như sau:
 ```ruby
