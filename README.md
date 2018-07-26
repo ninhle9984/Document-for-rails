@@ -119,3 +119,245 @@ end
      has_one :account
   end
   ```
+**Note:** belongs_to và has_one khi khai báo trong model phải sử dụng singular (số ít), nếu ko kết quả chạy khi truy vấn sẽ không đúng như mong đợi: <br/>
+VD: với `belongs_to`  nếu khai báo  `belongs_to :users` thì kết quả của Account.first.users trả về  `nil`
+     với `has_one` nếu khai báo has_one :users thì kết quả truy vấn của `User.first.account` sẽ trả về error
+     `NameError (uninitialized constant User::Accounts)` <br/>
+     - Khi sử dụng `belongs_to` sẽ không thể tạo  được account nếu thiếu `ser_id` hoặc `user_id`không tồn tại nhưng `has_one` thì có, có thể tạo nhiều account, ko có `user_id`, `user_id` ko tồn tại hoặc trùng nhau. Trong trường hợp trùng nhau thì khi truy vấn `user.accoun`t sẽ trả về bản ghi đầu tiên.<br/>
+     - Câu lệnh SQL tương ứng sinh ra:<br/>
+     + VD: Khi truy vấn tài khoản của user đầu tiên `has_one` :<br/>
+ ```sql
+     Account Load (0.2ms)  SELECT  "accounts".* FROM "accounts" WHERE "accounts"."user_id" = ? LIMIT ?  [["user_id", 1], ["LIMIT", 1]]
+```
+vì có limit nên trường hợp tạo nhiều account thì cũng trả về bản ghi đầu tiên. <br/>
++ VD: Khi truy vấn thông tin của ngừời sở hữu account thứ nhất:
+```sql
+User Load (0.2ms)  SELECT  "users".* FROM "users" WHERE "users"."id" = ? LIMIT ?  [["id", 1], ["LIMIT", 1]]
+```
+##### 2. Has_many:
+Kết nối một - nhiều giữa một model với model khác. <br />
+Trường hợp vẫn set up như trên, coi một `user` có nhiều `account` ta chỉ việc khai báo lại trong model *User* :
+<br />
+```ruby
+class User < ApplicationRecord
+   has_many :accounts
+end
+```
+Theo quy ước thì khi khai báo has_many thì sử dụng số nhiều (accounts), dùng số ít (account) thì vẫn chạy cho kết quả đúng, nhưng để cho đúng nggữ nghĩa thì nên dùng số nhiều.<br />
+Câu lệnh SQL sinh ra khi truy vấn tài khoản của user đầu tiên  :
+```sql
+Account Load (0.2ms)  SELECT  "accounts".* FROM "accounts" WHERE "accounts"."user_id" = ? [["user_id", 1]]
+```
+So với khi khai báo sử dụng `has_one` thì không còn sử dụng LIMIT trong câu lệnh SQL nữa.<br/>
+
+##### 3. Has_one :through
+Kết nối một - một với một model khác, nhưng thông qua model trung gian. Vấn ví dụ trên 1.1, có thêm model Exchange quan hệ một - một với Account.<br/>
+Migration của exchange:<br/>
+```sql
+class CreateExchanges < ActiveRecord::Migration[5.2]
+  def change
+    create_table :exchanges do |t|
+      t.string :exchange_type
+      t.belongs_to :account, index: true
+
+      t.timestamps
+     end
+   end
+end
+```
+Trong model của sẽ viết như sau: 
+```ruby
+class User < ApplicationRecord
+  has_one :account
+  has_one :exchange, through: :account
+end
+
+class Account < ApplicationRecord
+  belongs_to :user
+  has_one :exchange
+end
+
+class Exchange < ApplicationRecord
+  belongs_to :account
+end
+```
+Khi đó có thể sử dụng phương thức `user.exchange` để truy vấn exchange của thay vì `user.account.exchage` <br/>
+Câu lệnh SQL tương ứng sinh ra sẽ join 2 bảng *Exchange* và *Account* để lấy kết quả thay vì 2 câu lệnh `SELECT WHERE` khi sử dụng ` user.account.exchage`
+
+##### 4. Has_many :through
+  Kết nối nhiều - nhiều với một model khác thông qua model trung gian.<br/>
+   VD: một user có tham gia nhiều club, một club có nhiều user, ta xây dụng mô hình `has_many :through` qua một model trung gian là ClubUser , khai báo như sau:<br/>
+   Migration file tương ứng của *User* vẫn không thay đổi còn của  *ClubUser* và *Club* như sau:
+```ruby
+class CreateClubUsers < ActiveRecord::Migration[5.2]
+  def change
+    create_table :club_users do |t|
+      t.belongs_to :user, index: true
+      t.belongs_to :club, index: true
+
+      t.timestamps
+    end
+  end
+end
+
+class CreateClubs < ActiveRecord::Migration[5.2]
+  def change
+    create_table :clubs do |t|
+      t.string :name
+      ..................................
+      t.timestamps
+    end
+  end
+end
+
+```
+  Trong model sẽ được khai báo như sau:
+```ruby
+class User < ApplicationRecord
+  has_many :club_users
+  has_many :clubs, through: :club_users
+end
+
+class Club < ApplicationRecord
+  has_many :club_users
+  has_many :users, through: :club_users
+end
+
+class ClubUser < ApplicationRecord
+  belongs_to :user
+  belongs_to :club
+end
+```
+Với khai báo ta có thể sử dụng `user.clubs` và `club.users` để in ra danh sách các club mà user tham gia hoặc danh sách user của club.<br/>
+Với quan hệ như vậy thì SQL sẽ sử dụng join bảng trung gian *ClubUser* với bảng tương ứng là *User* hoặc *Club* và dụng `WHERE` để lọc dữ liệu:<br/>
+`user.clubs`:
+```sql
+Club Load (0.3ms)  SELECT "clubs".* FROM "clubs" INNER JOIN "club_users" ON "clubs"."id" = "club_users"."club_id" WHERE "club_users"."user_id" = ?  [["user_id", 1]]
+```
+`club.users`:
+```sql
+User Load (0.5ms)  SELECT "users".* FROM "users" INNER JOIN "club_users" ON "users"."id" = "club_users"."user_id" WHERE "club_users"."club_id" = ?  [["club_id", 1]]
+```
+
+##### 5. Has_and_belongs_to_many
+Tương tự has_many :through là kết nhiều nhiều - nhiều giữa 2 model nhưng qua JoinTable chứ ko qua model thứ 3.<br/>
+Khi đó ta tạo bảng Join table có file migration như sau:
+```ruby
+class CreateJoinTableUserClub < ActiveRecord::Migration[5.2]
+  def change
+    create_table :clubs_users, id: false do |t|
+      t.belongs_to :user, index: true
+      t.belongs_to :club, index: true
+    end
+  end
+end
+```
+Trong model:
+```ruby
+ class User < ApplicationRecord
+   has_and_belongs_to_many :clubs
+ end
+
+ class Club < ApplicationRecord
+   has_and_belongs_to_many :users
+ end
+```
+Khi đó ta  có thể dùng các phương thức `user.clubs` và `club.users` để truy vấn dữ liệu tương ứng như `has_many :through`. Kết quả câu lệnh SQL cũng chạy tương tự, là join các bảng. Rails cũng cung cấp 1 list các method để có thể thêm xóa các đối tượng quan hệ (vì ko có model cho bảng join) như `collection << (object), collection.delete(object)`.<br/>
+Về việc lựa chọn giữa `has_many :through` và `has_and_belongs_to_many` thì nên lựa chọn `has_many :through` trong trường hợp cần làm việc với model trung gian (trường hợp bảng trung gian ko chỉ có 2 trường foreign_key của 2  bảng đơn thuần), còn lại nên dùng `has_and_belongs_to_many` việc setup đơn giản hơn mà cũng cho hiệu quả tương tự.
+
+### N+1 query:
+
+##### 1. N+1 query là gì?
+Trường hợp trong bảng User và Account (1), muốn lấy email của account của 10 user đầu tiên ta làm như sau:
+```ruby
+users = User.limit(10)
+users.each do |user|
+   puts user.account.email
+end
+```
+Query sinh ra như sau:
+```sql
+  User Load (0.3ms)  SELECT  "users".* FROM "users" LIMIT ?  [["LIMIT", 10]]
+    Account Load (0.5ms)  SELECT  "accounts".* FROM "accounts" WHERE "accounts"."user_id" = ? LIMIT ?  [["user_id", 1], ["LIMIT", 1]]
+janae@millergrady.name
+  Account Load (0.2ms)  SELECT  "accounts".* FROM "accounts" WHERE "accounts"."user_id" = ? LIMIT ?  [["user_id", 2], ["LIMIT", 1]]
+terrill_lind@larkin.biz
+  Account Load (0.2ms)  SELECT  "accounts".* FROM "accounts" WHERE "accounts"."user_id" = ? LIMIT ?  [["user_id", 3], ["LIMIT", 1]]
+cindy_sauer@dickinson.name
+  Account Load (0.0ms)  SELECT  "accounts".* FROM "accounts" WHERE "accounts"."user_id" = ? LIMIT ?  [["user_id", 4], ["LIMIT", 1]]
+anibal_okeefe@doyle.net
+  Account Load (0.0ms)  SELECT  "accounts".* FROM "accounts" WHERE "accounts"."user_id" = ? LIMIT ?  [["user_id", 5], ["LIMIT", 1]]
+pasquale@stehrkonopelski.com
+  Account Load (0.0ms)  SELECT  "accounts".* FROM "accounts" WHERE "accounts"."user_id" = ? LIMIT ?  [["user_id", 6], ["LIMIT", 1]]
+sam.rodriguez@hoegergoldner.org
+  Account Load (0.0ms)  SELECT  "accounts".* FROM "accounts" WHERE "accounts"."user_id" = ? LIMIT ?  [["user_id", 7], ["LIMIT", 1]]
+thomas@bergstrom.name
+  Account Load (0.0ms)  SELECT  "accounts".* FROM "accounts" WHERE "accounts"."user_id" = ? LIMIT ?  [["user_id", 8], ["LIMIT", 1]]
+gideon@hyattzieme.name
+  Account Load (0.0ms)  SELECT  "accounts".* FROM "accounts" WHERE "accounts"."user_id" = ? LIMIT ?  [["user_id", 9], ["LIMIT", 1]]
+payton@schroeder.org
+  Account Load (0.0ms)  SELECT  "accounts".* FROM "accounts" WHERE "accounts"."user_id" = ? LIMIT ?  [["user_id", 10], ["LIMIT", 1]]
+blanche_bernier@kozeybuckridge.io
+```
+Có tất cả 11 câu query, câu đầu tiên dùng để load 10 user, 10 câu sau dùng để load account của 10 user đó, nếu có N user thì sẽ có N câu query tương ứng => N + 1 query
+##### 2. Xử lí N+1 query
+###### 2.1 Preload
+Trường hợp trên sử dụng preload như sau:
+```ruby
+users = User.preload(:account).limit(10)
+users.each do |user|
+   puts user.account.email
+end
+
+```
+Dùng preload, giúp ngăn N + 1 query, khi đó câu lệnh truy vấn sinh ra:
+```sql
+ User Load (0.3ms)  SELECT  "users".* FROM "users" LIMIT ?  [["LIMIT", 10]]
+ Account Load (0.3ms)  SELECT "accounts".* FROM "accounts" WHERE "accounts"."user_id" IN (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)  [["user_id", 1], ["user_id", 2], ["user_id", 3], ["user_id", 4], ["user_id", 5], ["user_id", 6], ["user_id", 7], ["user_id", 8], ["user_id", 9], ["user_id", 10]]
+
+```
+Chỉ có 2 câu query, câu đầu dùng để load toàn bộ `user`, câu thứ 2 dùng để load `account`, nhưng thay vì load đơn lẻ từng account dùng `WHERE` thì lại sử dụng `WHERE IN` load tất cả trong 1 câu query, nhanh hơn hẳn 0,5 ms =)), hay 2,66 lần trong trường hợp này.
+###### 2.2 Eager_load:
+  Thay vì sử dụng `WHERE IN` thì eager_load lại sử dụng `JOIN` để khử N + 1 query, câu lệnh trên được viết lại như sau:
+```ruby
+users = User.eager_load(:account).limit(10)
+users.each do |user|
+  puts user.account.email
+end
+```
+ Query sinh ra:
+ ```sql
+  SQL (0.6ms)  SELECT  "users"."id" AS t0_r0, "users"."name" AS t0_r1, "users"."created_at" AS t0_r2, "users"."updated_at" AS t0_r3, "accounts"."id" AS t1_r0, "accounts"."email" AS t1_r1, "accounts"."user_id" AS t1_r2, "accounts"."created_at" AS t1_r3, "accounts"."updated_at" AS t1_r4 FROM "users" LEFT OUTER JOIN "accounts" ON "accounts"."user_id" = "users"."id" LIMIT ?  [["LIMIT", 10]]
+ ```
+###### 2.3 Includes:
+  Trong điều kiện bình thường Includes hoạt động giống preload, nghĩa là sử dụng `WHERE IN` để truy vấn, trong một số trường hợp  thì Includes hoạt động giống eager_load nghĩa là sử dụng `LEFT OUTER JOIN`. Để hiểu kỹ hơn có thể xem qua ví dụ:
+  -  Có thêm điều kiện `WHERE` trong cùng bảng:
+  Đối với preload `users = User.preload(:account).where("users.id = 1")`, câu lệnh trên chạy cho kết quả:
+```ruby
+ User Load (0.3ms)  SELECT "users".* FROM "users" WHERE (users.id = 1)
+ Account Load (0.2ms)  SELECT "accounts".* FROM "accounts" WHERE "accounts"."user_id" = ?  [["user_id", 1]]
+```
+Trường hợp này sử dụng includes `users = User.includes(:account)` thay cho preload cho kết qủa hoàn toàn giống nhau
+- Trong trường hợp sử dụng điều kiện truy vấn đối với bảng quan hệ:
+`User.includes(:account).where("accounts.id = ?", 1)` và `User.preload(:account).where("accounts.id = ?", 1)` đều trả lỗi ` no such column: accounts.id: SELECT  "users".* FROM "users" WHERE (accounts.id = 1) LIMIT ?`.<br />
+- Sử dụng nested hash: `users = User.includes(:account).where(accounts: {id: 'joanie@johnston.org'})` includes sẽ tự convert câu lệnh sql sang join giống như trường hợp eager_load có thêm điều kiện `WHERE`:
+```sql
+SQL (0.1ms)  SELECT  "users"."id" AS t0_r0, "users"."name" AS t0_r1, "users"."created_at" AS t0_r2, "users"."updated_at" AS t0_r3, "accounts"."id" AS t1_r0, "accounts"."email" AS t1_r1, "accounts"."user_id" AS t1_r2, "accounts"."created_at" AS t1_r3, "accounts"."updated_at" AS t1_r4 FROM "users" LEFT OUTER JOIN "accounts" ON "accounts"."user_id" = "users"."id" WHERE "accounts"."id" = ? LIMIT ?  [["id", 0], ["LIMIT", 11]]
+```
+còn trường hợp sử dụng `eager_load` trả lỗi `Can't join 'User' to association named 'preload'`. Nếu muốn `includes` sử dụng `join` thay cho `WHERE IN` có thể sử dụng refereneces: `users = User.includes(:account).references(:account)`.
+```sql
+  SQL (0.3ms)  SELECT  "users"."id" AS t0_r0, "users"."name" AS t0_r1, "users"."created_at" AS t0_r2, "users"."updated_at" AS t0_r3, "accounts"."id" AS t1_r0, "accounts"."email" AS t1_r1, "accounts"."user_id" AS t1_r2, "accounts"."created_at" AS t1_r3, "accounts"."updated_at" AS t1_r4 FROM "users" LEFT OUTER JOIN "accounts" ON "accounts"."user_id" = "users"."id" LIMIT ?  [["LIMIT", 11]]
+```
+###### 2.3 Includes:
+Khác với eager_load sử dụng LEFT OUTER JOIN thì joins sử dụng INNER JOIN để lấy dữ liệu<br/>
+Trong VD trên viết lai sử dụng join như sau:
+```ruby
+users = User.joins(:account).select("user.*, accounts.email")
+users.each do |user|
+  puts user.email
+end
+```
+Khi load chỉ sinh ra một câu query duy nhất:
+```sql
+ User Load (0.6ms)  SELECT users.*, accounts.email FROM "users" INNER JOIN "accounts" ON "accounts"."user_id" = "users"."id"
+```
