@@ -136,7 +136,12 @@ vì có limit nên trường hợp tạo nhiều account thì cũng trả về b
 ```sql
 User Load (0.2ms)  SELECT  "users".* FROM "users" WHERE "users"."id" = ? LIMIT ?  [["id", 1], ["LIMIT", 1]]
 ```
-##### 2. Has_many:
++ Đối với việc khởi tạo quan hệ `has_one - belongs_to` khi khởi tạo nên cho thuộc tính `unique` cho ` foreign_key` để
+chắc chắn rằng mỗi `user` chỉ có duy nhất một `account`. Như đã lưu ý ở trên `has_one` sử dụng limit khi truy vấn nên luôn chỉ trả về bản ghi đầu tiên, trong trường hợp setup như trên ko có `unique` có thể gán nhiều `account` cho một `user` làm cho nó giống với quan hệ `has_many - belongs_to`  nhưng về ngữ nghĩa thì 2 quan hệ hoàn toàn khác nhau. Migration của foreign cho quan hệ `has_many - belongs_to` được viết lại:
+```sql
+t.belongs_to :user,index: { unique: true }, foreign_key: true
+```
+### 2. Has_many:
 Kết nối một - nhiều giữa một model với model khác. <br />
 ![](https://github.com/ninhle9984/Document-for-rails/blob/master/images/has_many.png) <br/>
 Trường hợp vẫn set up như trên, coi một `user` có nhiều `account` ta chỉ việc khai báo lại trong model *User* :
@@ -355,7 +360,7 @@ còn trường hợp sử dụng `eager_load` trả lỗi `Can't join 'User' to 
 ```sql
   SQL (0.3ms)  SELECT  "users"."id" AS t0_r0, "users"."name" AS t0_r1, "users"."created_at" AS t0_r2, "users"."updated_at" AS t0_r3, "accounts"."id" AS t1_r0, "accounts"."email" AS t1_r1, "accounts"."user_id" AS t1_r2, "accounts"."created_at" AS t1_r3, "accounts"."updated_at" AS t1_r4 FROM "users" LEFT OUTER JOIN "accounts" ON "accounts"."user_id" = "users"."id" LIMIT ?  [["LIMIT", 11]]
 ```
-###### 2.3 Includes:
+###### 2.4 Joins:
 Khác với eager_load sử dụng LEFT OUTER JOIN thì joins sử dụng INNER JOIN để lấy dữ liệu<br/>
 Trong VD trên viết lai sử dụng join như sau:
 ```ruby
