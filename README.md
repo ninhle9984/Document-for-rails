@@ -334,7 +334,26 @@ end
  ```
   Đối với bảng có single association với nhiều bảng khác thì việc sử dụng polymorphic giúp việc khai báo đơn giản, ngắn gọn và linh hoạt hơn so với việc setup với từng bảng một.
 
-##### 7. Single table inheritance
+##### 7. Single table inheritance (STI):
+ Khi có nhiều loại object cùng chung một model có cùng các trường dữ liệu, và share nhiều các function giống nhau, khi muốn định nghĩa riêng function cho từng loai object mà không muốn share và trùng lặp code giữa các loại object thì nên sử dụng STI (việc định nghĩa chung một method trong một class model gồm nhiều loai đối tượng khiến các đối tượng ko liên quan cũng có thể sử dụng, hoặc phải check các loọa đối tượng để implement method cho loại đối tượng nào đó), tách riêng mỗi loại đối tượng vào một class và định nghĩa các function trong đó (more control).
+ Implement STI: trong class `User` ta muốn tác riêng thành các loại đối tượng như `Manager`, `Member`. Ta sẽ thêm vào bảng User cột `type` vào bảng `User`. Sau đó tạo 2 file có tên lần lượt là `manager.rb` và `member.rb`. Trong 2 file khỏi tạo class với tên tương ứng và đều cho kế thừa từ class `User`
+ ```ruby
+ class Manager < User
+ end
+
+ class Member < User
+ end
+ ```
+ Trong các class này ta có thể định nghĩa các method, validation tương ứng cho từng loại. Khi khởi tạo object cho từng loại tương ứng bằng cách gọi thằng tên `Model` trong cột type của object được khởi tạo sẽ nhận giá trị là tên `Model` đó.
+
+```ruby
+ > Manager.new
+ => #<Manager id: nil, name: nil, created_at: nil, updated_at: nil, type: "Manager"> 
+
+```
+Trường hợp là base class thì giá trị trong type nhận sẽ là `nil`.
+
+
 ##### 8. Một số option sử dụng trong association.
 
 ### N+1 query:
