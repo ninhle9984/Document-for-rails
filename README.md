@@ -100,7 +100,7 @@ end
 class CreateAccounts < ActiveRecord::Migration[5.2]
   def change
     create_table :accounts do |t|
-      t.email :name
+      t.string :email
       t.belongs_to :user, index: true
       …………………………
       t.timestamps
@@ -277,10 +277,65 @@ Trong model:
 Khi đó ta  có thể dùng các phương thức `user.clubs` và `club.users` để truy vấn dữ liệu tương ứng như `has_many :through`. Kết quả câu lệnh SQL cũng chạy tương tự, là join các bảng. Rails cũng cung cấp 1 list các method để có thể thêm xóa các đối tượng quan hệ (vì ko có model cho bảng join) như `collection << (object), collection.delete(object)`.<br/>
 Về việc lựa chọn giữa `has_many :through` và `has_and_belongs_to_many` thì nên lựa chọn `has_many :through` trong trường hợp cần làm việc với model trung gian (trường hợp bảng trung gian ko chỉ có 2 trường foreign_key của 2  bảng đơn thuần), còn lại nên dùng `has_and_belongs_to_many` việc setup đơn giản hơn mà cũng cho hiệu quả tương tự.
 
-##### 6. Polymorphic association
+##### 6. Polymorphic association 
+ Với việc sử dung polymorphic, một model có thể đơn liên kết liên kết với nhiều bảng khác qua một bảng trung gian.Quan hệ với các bảng khác qua bảng trung gian này. Có thể biểu diễn như sau:
+ Ví dụ đơn giản: Ta có thêm bảng Product và Picture. Mỗi User có một Picture sử dụng như Avatar, còn mỗi Product có nhiều Picture. Đối với trường hợp thông thường thì ta sẽ thêm 2 cột user_id và product_id vào trong bảng Picture, và khai báo sử dụng quan hệ belongs_to với bảng User và belongs_to - has_many giữa Product và Picture. Bằng việc sử dụng polymorphic ta có thể khai báo như sau:
+ ```ruby
+ class CreatePictures < ActiveRecord::Migration[5.2]
+  def change
+    create_table :pictures do |t|
+      t.string :name
+      t.integer :ownerable_id
+      t.string :ownerable_type
+
+      t.timestamps
+    end
+
+    add_index :pictures, [:ownerable_id, :ownerable_type]
+  end
+end
+
+ ```
+Hoặc để cho ngắn gọn: 
+ 
+ ```ruby
+ class CreatePictures < ActiveRecord::Migration[5.2]
+  def change
+    create_table :pictures do |t|
+      t.string :name
+      t.belongs_to :ownerable, polymorphic: true
+
+      t.timestamps
+    end
+  end
+end
+ ```
+ Trong model sẽ khai báo như sau:
+ ```ruby
+ class Picture < ApplicationRecord
+  belongs_to :owenerable, polymorphic: true
+end
+
+class Product < ApplicationRecord
+  has_many :pictures, as: :owenerable
+end
+
+class User < ApplicationRecord
+  has_one :picture, as: :owenerable
+end
+```
+ Khi đó trong bảng Picture sẽ có thêm 2 trường là ownerable_type sẽ lưu tên model nó references tới và một là onwerable_id id của bản ghỉ mà nó reference tới. Khi khởi tạo một record Picture, có thể truyền trực tiếp một object vào ownerable attributes. VD: `Picture.create name: "Pic 1", ownerable: User.first`. Khi đó ta có sử dụng Picture.first : `#<Picture id: 1, name: "Pic 1", owenerable_type: "User", owenerable_id: 1, created_at: "2018-08-31 03:25:06", updated_at: "2018-08-31 06:20:50"> `. Đối với User và Product ta có thể dùng các phương thức để query dữ liệu bình thường như trong khai báo `Product.first.pictures`, `User.first.picture`.Rails sẽ sinh ra query để filter dữ liệu trong bảng Picture theo `ownerable_type` và `ownerable_id`, tương ứng với quan hệ một - nhiều hay nhiều - nhiều mà sẽ `LIMMIT` tương ứng.
+ ```sql
+  User Load (0.3ms)  SELECT  "users".* FROM "users" ORDER BY "users"."id" ASC LIMIT ?  [["LIMIT", 1]]
+  Picture Load (0.2ms)  SELECT  "pictures".* FROM "pictures" WHERE "pictures"."owenerable_id" = ? AND "pictures"."owenerable_type" = ? LIMIT ?  [["owenerable_id", 1], ["owenerable_type", "User"], ["LIMIT", 1]]
+  
+  Product Load (0.3ms)  SELECT  "products".* FROM "products" ORDER BY "products"."id" ASC LIMIT ?  [["LIMIT", 1]]
+  Picture Load (0.2ms)  SELECT  "pictures".* FROM "pictures" WHERE "pictures"."owenerable_id" = ? AND "pictures"."owenerable_type" = ? LIMIT ?  [["owenerable_id", 1], ["owenerable_type", "Product"], ["LIMIT", 11]]
+ ```
+  Đối với bảng có single association với nhiều bảng khác thì việc sử dụng polymorphic giúp việc khai báo đơn giản, ngắn gọn và linh hoạt hơn so với việc setup với từng bảng một.
 
 ##### 7. Single table inheritance
-
+##### 8. Một số option sử dụng trong association.
 
 ### N+1 query:
 
