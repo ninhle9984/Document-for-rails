@@ -277,6 +277,11 @@ Trong model:
 Khi đó ta  có thể dùng các phương thức `user.clubs` và `club.users` để truy vấn dữ liệu tương ứng như `has_many :through`. Kết quả câu lệnh SQL cũng chạy tương tự, là join các bảng. Rails cũng cung cấp 1 list các method để có thể thêm xóa các đối tượng quan hệ (vì ko có model cho bảng join) như `collection << (object), collection.delete(object)`.<br/>
 Về việc lựa chọn giữa `has_many :through` và `has_and_belongs_to_many` thì nên lựa chọn `has_many :through` trong trường hợp cần làm việc với model trung gian (trường hợp bảng trung gian ko chỉ có 2 trường foreign_key của 2  bảng đơn thuần), còn lại nên dùng `has_and_belongs_to_many` việc setup đơn giản hơn mà cũng cho hiệu quả tương tự.
 
+##### 6. Polymorphic association
+
+##### 7. Single table inheritance
+
+
 ### N+1 query:
 
 ##### 1. N+1 query là gì?
