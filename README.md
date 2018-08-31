@@ -352,9 +352,15 @@ end
 
 ```
 Trường hợp là base class thì giá trị trong type nhận sẽ là `nil`.
+Làm việc với các model như bình thường.
+```sql
+> Manager.all
+  Manager Load (0.5ms)  SELECT  "users".* FROM "users" WHERE "users"."type" IN ('Manager') LIMIT ?  [["LIMIT", 11]]
 
+```
 
 ##### 8. Một số option sử dụng trong association.
+
 
 ### N+1 query:
 
