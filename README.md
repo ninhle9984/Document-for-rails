@@ -1,8 +1,9 @@
 # Document-for-rails
 ### Xem log của server:
+- Log như nhật kí, ghi lại hoạt động của ứng dụng, qua đó ta có thể check xem server đang hoạt động như thế nào, có đúng hay không, nếu có lỗi thì lỗi xảy ra ở đâu.
 - Log sever môi trường development được xem hiện thị ở terminal (ubuntu), bash ( mac OS), powershell (window)
 - Check log đã được lưu trữ ở log/development.log, đối với linux, có thể lọc thông tin của log bằng cách sử dụng 
-``` tail -f log/development.log | grep ```
+``` tail -f log/development.log | grep ```, đây cũng là phương pháp để check log trên môi trường production, lệnh ` tail -f ` sẽ đọc file log và hiện thị theo thời gian thực, ngĩa là nếu file có bất cứ thay đổi nào mới trong thời gian này cũng sẽ được hiển thị.
 ### Thông tin của log :
 ```sql
 Started GET "/vi/products/50" for 127.0.0.1 at 2018-07-25 16:17:40 +0700
@@ -49,7 +50,7 @@ Completed 200 OK in 87ms (Views: 77.9ms | ActiveRecord: 3.1ms)
   Product Load (0.1ms)  SELECT  "products".* FROM "products" WHERE "products"."id" = ? LIMIT ?  [["id", 49], ["LIMIT", 1]]
 
 ```
-- Các template và partial được render : trong log list ra tất cả các view và các partial được sử dụng để compile cho froned output :<br/>
+- Các template và partial được render : trong log list ra tất cả các view và các partial được sử dụng để compile cho front- output :<br/>
 ```
 Rendered brands/_brand.html.erb (15.6ms)
 Rendered comments/_comment.html.erb (1.1ms)
@@ -352,9 +353,95 @@ end
 
 ```
 Trường hợp là base class thì giá trị trong type nhận sẽ là `nil`.
+Làm việc với các model như bình thường.
+```sql
+> Manager.all
+  Manager Load (0.5ms)  SELECT  "users".* FROM "users" WHERE "users"."type" IN ('Manager') LIMIT ?  [["LIMIT", 11]]
 
+```
 
 ##### 8. Một số option sử dụng trong association.
+* Dependent: :destroy: gỉa sử có model `Author` và `Post`, quan hệ theo kiểu `has-many`, thì khi một Author bị xóa, bạn cũng muốn xóa tất cả các Post thuộc về Author đó nếu không sử dụng option của Rails ta sẽ phải làm như sau:
+```ruby
+ author = Author.find(:id)
+ Post.where(author_id: author.id).destroy_all
+ author.destroy
+```
+thay vào đó ta chỉ việc sử dụng `dependent: :destroy` và Rails sẽ lo phần còn lại
+```ruby
+class User < ApplicationRecord
+  has_many :posts, dependent: :destroy
+end
+
+User.first.destroy
+
+  User Load (0.3ms)  SELECT  "users".* FROM "users" ORDER BY "users"."id" ASC LIMIT ?  [["LIMIT", 1]]
+  (0.1ms)  begin transaction
+  Post Load (0.2ms)  SELECT "posts".* FROM "posts" WHERE "posts"."user_id" = ?  [["user_id", 32]]
+  Post Destroy (0.4ms)  DELETE FROM "posts" WHERE "posts"."id" = ?  [["id", 6]]
+  Post Destroy (0.2ms)  DELETE FROM "posts" WHERE "posts"."id" = ?  [["id", 7]]
+  Post Destroy (0.3ms)  DELETE FROM "posts" WHERE "posts"."id" = ?  [["id", 8]]
+  Post Destroy (0.2ms)  DELETE FROM "posts" WHERE "posts"."id" = ?  [["id", 9]]
+  Post Destroy (0.2ms)  DELETE FROM "posts" WHERE "posts"."id" = ?  [["id", 10]]
+  User Destroy (0.2ms)  DELETE FROM "users" WHERE "users"."id" = ?  [["id", 32]]
+  (5.7ms)  commit transaction
+# Tạo 1 transaction thực hiện việc xóa Post và User
+```
+* Dependent: :nullify: giả sử có 2 model `Organization` và `Employee`, khi một `Organization` bị xóa nhưng vẫn muốn giữ lại `Employee` ta sử dụng option nullify, khi đó một record trong Organization bị xóa thì tất cả các Employee thuộc Organization đó vẫn được giữ lại nhưng organization_id sẽ được đặt lại giá trị nil
+
+```ruby
+class Organization < ApplicationRecord
+  has_many :employees, dependent: :nullify
+end
+
+Organization.first.destroy
+
+  Organization Load (0.3ms)  SELECT  "organizations".* FROM "organizations" ORDER BY "organizations"."id" ASC LIMIT ?  [["LIMIT", 1]]
+  (0.1ms)  begin transaction
+  Employee Update All (0.5ms)  UPDATE "employees" SET "user_id" = NULL WHERE "employees"."organization_id" = ?  [["organization_id", 1]]
+  Organization Destroy (0.2ms)  DELETE FROM "organizations" WHERE "organizations"."id" = ?  [["id", 1]]
+  (6.6ms)  commit transaction
+
+```
+
+ * class_name và foreign_key: Khi tạo một association, khai báo phương thức cho assocition đó Rails sẽ mặc định tên class mà assocation trỏ tới và foreign key dựa vào tên association theo dạng associationname_id. VD:
+ ```ruby
+   class Post < ActiveRecord::Base
+    belongs_to :user
+  end
+  
+ # Rails sẽ ngâm hiểu class trỏ tới là User và foreign key là user_id. 
+ ```
+ Khi kháo báo assocition với tên khác, cần phải chỉ rõ ràng tên class và foreign_key bằng cách sử dụng class_name và foreign_key option:
+ 
+ ```ruby
+  class Post < ActiveRecord::Base
+    belongs_to :author, class_name: User.name
+  end
+  
+  # Rails sẽ tự động tìm với foreign_key là user_id
+  
+  class User < ActiveRecord::Base
+    has_many :authored_posts, foreign_key: "author_id", class_name: Post.name
+  end
+  
+  # Rails sẽ tìm tới model Post với foreign_key là author_id
+ ```
+ * counter_cache: Khi muốn lấy tổng số lượng post của một user:
+ ```ruby
+ User.first.posts.size
+ 
+  User Load (0.4ms)  SELECT  "users".* FROM "users" ORDER BY "users"."id" ASC LIMIT ?  [["LIMIT", 1]]
+  (0.1ms)  SELECT COUNT(*) FROM "posts" WHERE "posts"."user_id" = ?  [["user_id", 1]]
+  ```
+  
+ Để tránh việc sử dụng ` COUNT(*) ` trong sql, ta sử dụng option counter_cache.
+ ```ruby
+ class Post < ApplicationRecord
+  belongs_to :user, counter_cache: true
+end
+ ```
+ Ta phải tạo thêm 1 column tương ứng trong bảng User là posts_count, khi đó mọi sự thay đổi về số lượng post của User thì giá trị của column này cũng được tự động update theo. Giá trị của `User.find(:id).posts.size` sẽ được trả về theo giá trị của cột này.
 
 ### N+1 query:
 
