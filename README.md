@@ -280,6 +280,7 @@ Về việc lựa chọn giữa `has_many :through` và `has_and_belongs_to_many
 
 ##### 6. Polymorphic association 
  Với việc sử dung polymorphic, một model có thể đơn liên kết liên kết với nhiều bảng khác qua một bảng trung gian.Quan hệ với các bảng khác qua bảng trung gian này. Có thể biểu diễn như sau:
+ ![](https://github.com/oLeVanNinh/Document-for-rails/blob/master/images/Polymorphics.png) <br/>
  Ví dụ đơn giản: Ta có thêm bảng Product và Picture. Mỗi User có một Picture sử dụng như Avatar, còn mỗi Product có nhiều Picture. Đối với trường hợp thông thường thì ta sẽ thêm 2 cột user_id và product_id vào trong bảng Picture, và khai báo sử dụng quan hệ belongs_to với bảng User và belongs_to - has_many giữa Product và Picture. Bằng việc sử dụng polymorphic ta có thể khai báo như sau:
  ```ruby
  class CreatePictures < ActiveRecord::Migration[5.2]
