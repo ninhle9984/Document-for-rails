@@ -441,7 +441,7 @@ Organization.first.destroy
   belongs_to :user, counter_cache: true
 end
  ```
- Ta phải tạo thêm 1 column tương ứng trong bảng User là posts_count, khi đó mọi sự thay đổi về số lượng post của User thì giá trị của c
+ Ta phải tạo thêm 1 column tương ứng trong bảng User là posts_count, khi đó mọi sự thay đổi về số lượng post của User thì giá trị của column này cũng được tự động update theo. Giá trị của `User.find(:id).posts.size` sẽ được trả về theo giá tr
 
 ### N+1 query:
 
