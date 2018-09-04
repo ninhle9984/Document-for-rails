@@ -433,9 +433,9 @@ Organization.first.destroy
  
   User Load (0.4ms)  SELECT  "users".* FROM "users" ORDER BY "users"."id" ASC LIMIT ?  [["LIMIT", 1]]
   (0.1ms)  SELECT COUNT(*) FROM "posts" WHERE "posts"."user_id" = ?  [["user_id", 1]]
-
- ```
- Để tránh việc sử dụng ``` COUNT(*) ``` trong sql, ta sử dụng option counter_cache.
+  ```
+  
+ Để tránh việc sử dụng ` COUNT(*) ` trong sql, ta sử dụng option counter_cache.
  ```ruby
  class Post < ApplicationRecord
   belongs_to :user, counter_cache: true
