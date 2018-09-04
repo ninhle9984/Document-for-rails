@@ -1,8 +1,9 @@
 # Document-for-rails
 ### Xem log của server:
+- Log như nhật kí, ghi lại hoạt động của ứng dụng, qua đó ta có thể check xem server đang hoạt động như thế nào, có đúng hay không, nếu có lỗi crash xảy ra thì crash ở đâu.
 - Log sever môi trường development được xem hiện thị ở terminal (ubuntu), bash ( mac OS), powershell (window)
 - Check log đã được lưu trữ ở log/development.log, đối với linux, có thể lọc thông tin của log bằng cách sử dụng 
-``` tail -f log/development.log | grep ```
+``` tail -f log/development.log | grep ```, đây cũng là phương pháp để check log trên môi trường production, lệnh ` tail -f ` sẽ đọc file log và hiện thị theo thời gian thực, ngĩa là nếu file có bất cứ thay đổi nào mới trong thợi gian này cũng sẽ 
 ### Thông tin của log :
 ```sql
 Started GET "/vi/products/50" for 127.0.0.1 at 2018-07-25 16:17:40 +0700
@@ -49,7 +50,7 @@ Completed 200 OK in 87ms (Views: 77.9ms | ActiveRecord: 3.1ms)
   Product Load (0.1ms)  SELECT  "products".* FROM "products" WHERE "products"."id" = ? LIMIT ?  [["id", 49], ["LIMIT", 1]]
 
 ```
-- Các template và partial được render : trong log list ra tất cả các view và các partial được sử dụng để compile cho froned output :<br/>
+- Các template và partial được render : trong log list ra tất cả các view và các partial được sử dụng để compile cho front- output :<br/>
 ```
 Rendered brands/_brand.html.erb (15.6ms)
 Rendered comments/_comment.html.erb (1.1ms)
