@@ -428,7 +428,7 @@ Organization.first.destroy
   # Rails sẽ tìm tới model Post với foreign_key là author_id
  ```
  * counter_cache: Khi muốn lấy tổng số lượng post của một user:
- ``ruby
+ ```ruby
  User.first.posts.size
  
   User Load (0.4ms)  SELECT  "users".* FROM "users" ORDER BY "users"."id" ASC LIMIT ?  [["LIMIT", 1]]
