@@ -1,3 +1,4 @@
 class User < ApplicationRecord
-  has_many :accounts
+  has_one :accounts
+  has_one :exchange, through: :account
 end
