@@ -1,4 +1,3 @@
 class Club < ApplicationRecord
-  has_many :club_users
-  has_many :users, through: :club_users
+  has_and_belongs_to_many :users
 end
