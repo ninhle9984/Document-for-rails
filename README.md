@@ -315,15 +315,15 @@ end
  Trong model sẽ khai báo như sau:
  ```ruby
  class Picture < ApplicationRecord
-  belongs_to :owenerable, polymorphic: true
+  belongs_to :ownerable, polymorphic: true
 end
 
 class Product < ApplicationRecord
-  has_many :pictures, as: :owenerable
+  has_many :pictures, as: :ownerable
 end
 
 class User < ApplicationRecord
-  has_one :picture, as: :owenerable
+  has_one :avatar, as: :ownerable
 end
 ```
  Khi đó trong bảng Picture sẽ có thêm 2 trường là ownerable_type sẽ lưu tên model nó references tới và một là onwerable_id id của bản ghỉ mà nó reference tới. Khi khởi tạo một record Picture, có thể truyền trực tiếp một object vào ownerable attributes. VD: `Picture.create name: "Pic 1", ownerable: User.first`. Khi đó ta có sử dụng Picture.first : `#<Picture id: 1, name: "Pic 1", owenerable_type: "User", owenerable_id: 1, created_at: "2018-08-31 03:25:06", updated_at: "2018-08-31 06:20:50"> `. Đối với User và Product ta có thể dùng các phương thức để query dữ liệu bình thường như trong khai báo `Product.first.pictures`, `User.first.picture`.Rails sẽ sinh ra query để filter dữ liệu trong bảng Picture theo `ownerable_type` và `ownerable_id`, tương ứng với quan hệ một - nhiều hay nhiều - nhiều mà sẽ `LIMMIT` tương ứng.
