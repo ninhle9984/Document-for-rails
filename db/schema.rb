@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema.define(version: 2018_09_20_064315) do
+ActiveRecord::Schema.define(version: 2018_09_20_065601) do
 
   create_table "accounts", force: :cascade do |t|
     t.string "email"
@@ -40,6 +40,15 @@ ActiveRecord::Schema.define(version: 2018_09_20_064315) do
     t.integer "user_id", null: false
     t.index ["club_id", "user_id"], name: "index_clubs_users_on_club_id_and_user_id"
     t.index ["user_id", "club_id"], name: "index_clubs_users_on_user_id_and_club_id"
+  end
+
+  create_table "pictures", force: :cascade do |t|
+    t.string "name"
+    t.string "ownerable_type"
+    t.integer "ownerable_id"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["ownerable_type", "ownerable_id"], name: "index_pictures_on_ownerable_type_and_ownerable_id"
   end
 
   create_table "users", force: :cascade do |t|
